@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { User, CheckCircle2, ChevronRight, Loader2, AlertTriangle, Check, MonitorPlay, LogOut, RefreshCw, BarChart3, ListChecks, FileText, Lock, PlayCircle } from 'lucide-react';
 import axios from 'axios';
 
-// API Apontando para o seu Django Local
+// API Apontando para o seu Django Local (que agora tem o /api no .env)
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function App() {
@@ -23,11 +23,13 @@ export default function App() {
   useEffect(() => {
     const carregarUrna = async () => {
       try {
+        // CORREÇÃO FINAL: Rota limpa, SEM barra no final
         const res = await axios.get(`${API_URL}/eleicoes/ativas`);
         if (res.data.length > 0) {
           const ativa = res.data[0];
           setEleicao(ativa);
           
+          // CORREÇÃO FINAL: Rota limpa, SEM barra no final
           const resEnquetes = await axios.get(`${API_URL}/eleicoes/${ativa.id}/enquetes`);
           setEnquetes(resEnquetes.data);
         } else {
@@ -50,6 +52,7 @@ export default function App() {
     if (!eleicao) return;
     if (!silencioso) setCarregandoResultados(true);
     try {
+      // CORREÇÃO FINAL: Rota limpa, SEM barra no final
       const res = await axios.get(`${API_URL}/eleicoes/${eleicao.id}/resultados`);
       setResultados(res.data);
     } catch (err) {
@@ -88,7 +91,6 @@ export default function App() {
 
   // LÓGICA ATUALIZADA: Só exige voto nas pautas que estão 'em_votacao'
   const pautasEmVotacao = enquetes.filter(e => e.status === 'em_votacao');
-  //const pautasAguardando = enquetes.filter(e => e.status === 'aguardando');
   
   const todasPautasRespondidas = pautasEmVotacao.length > 0 && pautasEmVotacao.every(e => votosSelecionados[e.id]);
 
@@ -110,6 +112,7 @@ export default function App() {
         opcao_id: Number(opcaoId)
       }));
 
+      // CORREÇÃO FINAL: Rota limpa, SEM barra no final
       await axios.post(`${API_URL}/votar`, {
         evento_id: eleicao.id,
         cpf_eleitor: cpf,
@@ -240,7 +243,6 @@ export default function App() {
                         <p className="text-slate-400 font-medium text-lg">{eleicao?.organizacao_nome}</p>
                       </div>
 
-                      {/* NOVO: Caixa de Boas-Vindas e Termos */}
                       <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-700/50 mb-2 shadow-inner">
                         <p className="text-slate-300 text-sm leading-relaxed text-center italic">
                           "{eleicao?.mensagem_boas_vindas || "Seja bem-vindo ao portal de votação."}"
