@@ -88,7 +88,7 @@ export default function App() {
 
   // LÓGICA ATUALIZADA: Só exige voto nas pautas que estão 'em_votacao'
   const pautasEmVotacao = enquetes.filter(e => e.status === 'em_votacao');
-  const pautasAguardando = enquetes.filter(e => e.status === 'aguardando');
+  //const pautasAguardando = enquetes.filter(e => e.status === 'aguardando');
   
   const todasPautasRespondidas = pautasEmVotacao.length > 0 && pautasEmVotacao.every(e => votosSelecionados[e.id]);
 
