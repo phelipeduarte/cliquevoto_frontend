@@ -10,7 +10,7 @@ const Inscricao = () => {
     const [formData, setFormData] = useState({ nome: '', cpf: '', email: '', whatsapp: '' });
     const [mensagem, setMensagem] = useState({ texto: '', tipo: '' });
 
-    // 🔗 URL DA SUA API NA AWS (Usando HTTPS para o celular não bloquear)
+    // 🔗 URL DA SUA API NA AWS (A regra de ouro)
     const API_BASE_URL = "https://api.cliquevoto.com.br";
 
     // 1. Busca info do Evento ao carregar
@@ -21,10 +21,8 @@ const Inscricao = () => {
                 setLoading(false);
             })
             .catch(err => {
-                console.error("Erro completo:", err);
-                // A MÁGICA 1: Pega o erro real da rede ou do servidor e joga na tela
-                const erroCausa = err.response ? `Status ${err.response.status} - ${JSON.stringify(err.response.data)}` : err.message;
-                setMensagem({ texto: `🚨 ERRO DE CONEXÃO: ${erroCausa}`, tipo: "erro" });
+                console.error("Erro ao buscar evento:", err);
+                setMensagem({ texto: "Evento não encontrado ou link expirado.", tipo: "erro" });
                 setLoading(false);
             });
     }, [slug]);
@@ -33,92 +31,130 @@ const Inscricao = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setEnviando(true);
-        setMensagem({ texto: '', tipo: '' }); // Limpa mensagens anteriores
+        setMensagem({ texto: '', tipo: '' }); // Limpa mensagens
 
         try {
             const payload = { ...formData, evento: evento.id };
             await axios.post(`${API_BASE_URL}/api/evento/inscrever/`, payload);
             
-            setMensagem({ texto: "✅ Cadastro realizado com sucesso! Aguarde a aprovação.", tipo: "sucesso" });
-            setFormData({ nome: '', cpf: '', email: '', whatsapp: '' }); // Limpa o formulário
+            setMensagem({ texto: "✅ Cadastro realizado com sucesso! Aguarde a aprovação no seu e-mail ou WhatsApp.", tipo: "sucesso" });
+            setFormData({ nome: '', cpf: '', email: '', whatsapp: '' }); // Limpa o form
         } catch (err) {
-            // A MÁGICA 2: Mostra exatamente por que falhou ao salvar
-            const erroBackend = err.response?.data?.error || err.message;
-            setMensagem({ texto: `❌ FALHA AO SALVAR: ${erroBackend}`, tipo: "erro" });
+            const erroBackend = err.response?.data?.error || "Verifique os dados informados.";
+            setMensagem({ texto: `❌ Erro: ${erroBackend}`, tipo: "erro" });
         } finally {
             setEnviando(false);
         }
     };
 
-    // Atualiza os dados do formulário
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // Tela de Carregamento Inicial
-    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px', fontFamily: 'sans-serif' }}>Carregando informações do evento...</div>;
+    // --- TELAS DE ESTADO ---
+
+    if (loading) {
+        return <div style={{ textAlign: 'center', marginTop: '100px', fontFamily: 'sans-serif', color: '#666' }}>Carregando informações do evento...</div>;
+    }
     
-    // Se não achou o evento e deu erro na busca inicial
     if (!evento) {
         return (
-            <div style={{ textAlign: 'center', marginTop: '50px', fontFamily: 'sans-serif', padding: '20px' }}>
-                <h2 style={{ color: 'red' }}>Ops, algo deu errado!</h2>
-                <p style={{ fontWeight: 'bold' }}>{mensagem.texto}</p>
-                <p>Tire um print desta tela e envie para o suporte.</p>
+            <div style={{ textAlign: 'center', marginTop: '100px', fontFamily: 'sans-serif' }}>
+                <h2 style={{ color: '#d32f2f' }}>Evento indisponível</h2>
+                <p>{mensagem.texto}</p>
             </div>
         );
     }
 
-    // O Formulário Principal
+    // --- TELA PRINCIPAL (O FORMULÁRIO BONITO) ---
     return (
-        <div style={{ maxWidth: '500px', margin: '40px auto', padding: '20px', fontFamily: 'sans-serif', border: '1px solid #ccc', borderRadius: '8px' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '5px' }}>{evento.titulo}</h2>
-            <p style={{ textAlign: 'center', color: '#555', marginBottom: '20px' }}>{evento.organizacao_nome}</p>
+        <div style={{ 
+            minHeight: '100vh', 
+            backgroundColor: '#f3f4f6', 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            padding: '20px',
+            fontFamily: 'sans-serif'
+        }}>
+            <div style={{
+                backgroundColor: 'white',
+                padding: '40px 30px',
+                borderRadius: '12px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                width: '100%',
+                maxWidth: '450px'
+            }}>
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    {evento.organizacao_logo && (
+                        <img 
+                            src={evento.organizacao_logo} 
+                            alt={evento.organizacao_nome} 
+                            style={{ width: '80px', height: '80px', objectFit: 'contain', marginBottom: '15px' }}
+                        />
+                    )}
+                    <h2 style={{ margin: '0 0 10px 0', color: '#1f2937', fontSize: '24px' }}>{evento.titulo}</h2>
+                    <p style={{ margin: '0', color: '#6b7280', fontSize: '14px' }}>{evento.organizacao_nome}</p>
+                </div>
 
-            {mensagem.texto && (
-                <div style={{ 
-                    padding: '10px', 
-                    marginBottom: '15px', 
-                    borderRadius: '5px',
-                    backgroundColor: mensagem.tipo === 'erro' ? '#ffebee' : '#e8f5e9',
-                    color: mensagem.tipo === 'erro' ? '#c62828' : '#2e7d32',
-                    border: `1px solid ${mensagem.tipo === 'erro' ? '#ef9a9a' : '#a5d6a7'}`
-                }}>
-                    {mensagem.texto}
-                </div>
-            )}
+                {mensagem.texto && (
+                    <div style={{ 
+                        padding: '12px', 
+                        marginBottom: '20px', 
+                        borderRadius: '6px',
+                        backgroundColor: mensagem.tipo === 'erro' ? '#fee2e2' : '#d1fae5',
+                        color: mensagem.tipo === 'erro' ? '#991b1b' : '#065f46',
+                        fontSize: '14px',
+                        textAlign: 'center'
+                    }}>
+                        {mensagem.texto}
+                    </div>
+                )}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Nome Completo:</label>
-                    <input type="text" name="nome" value={formData.nome} onChange={handleChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>CPF:</label>
-                    <input type="text" name="cpf" value={formData.cpf} onChange={handleChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>E-mail:</label>
-                    <input type="email" name="email" value={formData.email} onChange={handleChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>WhatsApp:</label>
-                    <input type="text" name="whatsapp" value={formData.whatsapp} onChange={handleChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} />
-                </div>
-                
-                <button type="submit" disabled={enviando} style={{ 
-                    padding: '12px', 
-                    backgroundColor: enviando ? '#ccc' : '#4CAF50', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '4px',
-                    cursor: enviando ? 'not-allowed' : 'pointer',
-                    fontSize: '16px',
-                    marginTop: '10px'
-                }}>
-                    {enviando ? 'Enviando...' : 'Inscreva-se'}
-                </button>
-            </form>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#374151', fontWeight: '500' }}>Nome Completo</label>
+                        <input type="text" name="nome" value={formData.nome} onChange={handleChange} required 
+                            style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box', fontSize: '15px' }} />
+                    </div>
+                    
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#374151', fontWeight: '500' }}>CPF</label>
+                        <input type="text" name="cpf" value={formData.cpf} onChange={handleChange} required 
+                            placeholder="Apenas números"
+                            style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box', fontSize: '15px' }} />
+                    </div>
+                    
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#374151', fontWeight: '500' }}>E-mail</label>
+                        <input type="email" name="email" value={formData.email} onChange={handleChange} required 
+                            style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box', fontSize: '15px' }} />
+                    </div>
+                    
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#374151', fontWeight: '500' }}>WhatsApp</label>
+                        <input type="text" name="whatsapp" value={formData.whatsapp} onChange={handleChange} required 
+                            placeholder="(DDD) 99999-9999"
+                            style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box', fontSize: '15px' }} />
+                    </div>
+                    
+                    <button type="submit" disabled={enviando} style={{ 
+                        width: '100%',
+                        padding: '12px', 
+                        backgroundColor: enviando ? '#9ca3af' : '#2563eb', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '6px',
+                        cursor: enviando ? 'not-allowed' : 'pointer',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        marginTop: '10px',
+                        transition: 'background-color 0.2s'
+                    }}>
+                        {enviando ? 'Enviando Cadastro...' : 'Solicitar Inscrição'}
+                    </button>
+                </form>
+            </div>
         </div>
     );
 };
